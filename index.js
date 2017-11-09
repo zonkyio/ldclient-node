@@ -25,20 +25,20 @@ var new_client = function(sdk_key, config) {
 
   config = config || {};
   config.user_agent = 'NodeJSClient/' + package_json.version;
-  
+
   config.base_uri = (config.base_uri || 'https://app.launchdarkly.com').replace(/\/+$/, "");
   config.stream_uri = (config.stream_uri || 'https://stream.launchdarkly.com').replace(/\/+$/, "");
   config.events_uri = (config.events_uri || 'https://events.launchdarkly.com').replace(/\/+$/, "");
   config.stream = (typeof config.stream === 'undefined') ? true : config.stream;
   config.timeout = config.timeout || 5;
   config.capacity = config.capacity || 1000;
-  config.flush_interval = config.flush_interval || 5;  
+  config.flush_interval = config.flush_interval || 5;
   config.poll_interval = config.poll_interval > 1 ? config.poll_interval : 1;
   // Initialize global tunnel if proxy options are set
   if (config.proxy_host && config.proxy_port ) {
     config.proxy_agent = create_proxy_agent(config);
   }
-  config.logger = (config.logger || 
+  config.logger = (config.logger ||
     new winston.Logger({
       level: 'error',
       transports: [
@@ -72,11 +72,12 @@ var new_client = function(sdk_key, config) {
         } else {
           error = new Error("Unexpected error:", err);
         }
-        
+
+        client.emit('error', error);
         config.logger.error("[LaunchDarkly]", error);
       }
       else if (!init_complete) {
-        init_complete = true;        
+        init_complete = true;
         client.emit('ready');
       }
     });
@@ -123,7 +124,7 @@ var new_client = function(sdk_key, config) {
       config.logger.error("[LaunchDarkly] client has not finished initializing. Returning default value.");
       send_flag_event(key, user, default_val, default_val);
       cb(new Error("[LaunchDarkly] variation called before LaunchDarkly client initialization completed (did you wait for the 'ready' event?)"), default_val);
-      return; 
+      return;
     }
 
     config.feature_store.get(key, function(flag) {
@@ -151,7 +152,7 @@ var new_client = function(sdk_key, config) {
           send_flag_event(key, user, result, default_val, version);
           cb(null, result);
           return;
-        }               
+        }
       });
     });
   }
@@ -205,9 +206,9 @@ var new_client = function(sdk_key, config) {
 
   client.track = function(eventName, user, data) {
     sanitize_user(user);
-    var event = {"key": eventName, 
+    var event = {"key": eventName,
                 "user": user,
-                "kind": "custom", 
+                "kind": "custom",
                 "creationDate": new Date().getTime()};
 
     if (data) {
@@ -268,7 +269,7 @@ var new_client = function(sdk_key, config) {
 
     if (queue.length >= config.capacity) {
       client.flush();
-    } 
+    }
   }
 
   function send_flag_event(key, user, value, default_val, version) {
@@ -294,12 +295,12 @@ function create_proxy_agent(config) {
       host: config.proxy_host,
       port: config.proxy_port,
       proxyAuth: config.proxy_auth
-    } 
+    }
   };
 
   if (config.proxy_scheme === 'https') {
     if (!config.base_uri || config.base_uri.startsWith('https')) {
-     return tunnel.httpsOverHttps(options);      
+     return tunnel.httpsOverHttps(options);
     } else {
       return tunnel.httpOverHttps(options);
     }
