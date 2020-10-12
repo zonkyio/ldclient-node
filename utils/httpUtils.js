@@ -47,6 +47,9 @@ function httpRequest(requestUrl, options, body, config, callback) {
       callback(null, resp, body);
     });
   });
+  req.on('timeout', () => {
+    req.abort();
+  });
   req.on('error', err => {
     callback(err);
   });
